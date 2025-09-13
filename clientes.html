@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extractor de Datos de Instalación FTTH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Gestor de Instalaciones FTTH</h1>
+            <p class="mt-2 text-slate-600">Pega el reporte de WhatsApp para extraer y organizar los datos automáticamente.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <div class="lg:col-span-2">
+                <div class="bg-white p-6 rounded-xl shadow-md sticky top-8">
+                    <h2 class="text-xl font-semibold mb-4">1. Pegar Reporte Aquí</h2>
+                    <textarea id="inputText"
+                        class="w-full h-80 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 resize-none"
+                        placeholder="Pega aquí el texto completo copiado de WhatsApp..."></textarea>
+                    <button id="extractButton"
+                        class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
+                        Extraer y Añadir a la Base de Datos
+                    </button>
+                    <div id="toast" class="fixed bottom-10 right-10 py-2 px-4 rounded-lg shadow-xl opacity-0 transition-opacity duration-300"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                        <h2 class="text-xl font-semibold">2. Base de Datos de Instalaciones</h2>
+                        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-auto">
+                                <input type="text" id="searchInput" placeholder="Buscar..." class="w-full sm:w-40 pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    &#x1F50D;
+                                </span>
+                            </div>
+                             <button id="exportButton" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
+                                <span>&#x1F4BE;</span> Exportar
+                            </button>
+                            <button id="clearButton" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
+                                <span>&#x1F5D1;</span> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-500 mb-4">Se han registrado <span id="recordCount" class="font-bold">0</span> instalaciones. Desplázate horizontalmente para ver todos los datos.</p>
+                    <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">#</th>
+                                    <th scope="col" class="px-4 py-3">Contrato</th>
+                                    <th scope="col" class="px-4 py-3">Cliente</th>
+                                    <th scope="col" class="px-4 py-3">Dirección</th>
+                                    <th scope="col" class="px-4 py-3">Referencia</th>
+                                    <th scope="col" class="px-4 py-3">Contacto</th>
+                                    <th scope="col" class="px-4 py-3">Teléfono</th>
+                                    <th scope="col" class="px-4 py-3">GPS</th>
+                                    <th scope="col" class="px-4 py-3">Zona</th>
+                                    <th scope="col" class="px-4 py-3">NAP</th>
+                                    <th scope="col" class="px-4 py-3">Técnico</th>
+                                    <th scope="col" class="px-4 py-3">Cota Inicio</th>
+                                    <th scope="col" class="px-4 py-3">Cota Fin</th>
+                                    <th scope="col" class="px-4 py-3">Metraje</th>
+                                    <th scope="col" class="px-4 py-3">ONU MAC</th>
+                                    <th scope="col" class="px-4 py-3">Fibra Drop</th>
+                                    <th scope="col" class="px-4 py-3">Fastc Azul</th>
+                                    <th scope="col" class="px-4 py-3">Fastc Verde</th>
+                                    <th scope="col" class="px-4 py-3">Adapt Verde</th>
+                                    <th scope="col" class="px-4 py-3">Adapt Azul</th>
+                                    <th scope="col" class="px-4 py-3">Patchc</th>
+                                    <th scope="col" class="px-4 py-3">Roceta</th>
+                                    <th scope="col" class="px-4 py-3">Potencia NAP</th>
+                                    <th scope="col" class="px-4 py-3">Potencia ROS</th>
+                                    <th scope="col" class="px-4 py-3">Precinto</th>
+                                    <th scope="col" class="px-4 py-3">Puerto NAP</th>
+                                    <th scope="col" class="px-4 py-3">Puertos Disp.</th>
+                                    <th scope="col" class="px-4 py-3">Router</th>
+                                    <th scope="col" class="px-4 py-3">Observación</th>
+                                    <th scope="col" class="px-4 py-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <tr id="placeholderRow">
+                                    <td colspan="30" class="text-center py-10 px-4 text-slate-500">
+                                        No hay datos registrados. Pega un reporte y haz clic en "Extraer" para empezar.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal-overlay opacity-0 pointer-events-none">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold mb-2">Confirmar Acción</h3>
+            <p class="text-slate-600 mb-6">¿Estás seguro de que quieres borrar todos los datos de la tabla? Esta acción no se puede deshacer.</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelClear" class="py-2 px-6 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors">Cancelar</button>
+                <button id="confirmClear" class="py-2 px-6 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Sí, Borrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputText = document.getElementById('inputText');
+            const extractButton = document.getElementById('extractButton');
+            const exportButton = document.getElementById('exportButton');
+            const clearButton = document.getElementById('clearButton');
+            const dataTableBody = document.getElementById('dataTableBody');
+            const recordCountSpan = document.getElementById('recordCount');
+            const placeholderRow = document.getElementById('placeholderRow');
+            const toast = document.getElementById('toast');
+            const searchInput = document.getElementById('searchInput');
+            
+            const confirmModal = document.getElementById('confirmModal');
+            const cancelClear = document.getElementById('cancelClear');
+            const confirmClear = document.getElementById('confirmClear');
+
+            let database = [];
+            
+            const fieldMappings = [
+                { key: 'contrato', labels: ['Contrato N°', 'Contrato No', 'Contrato N', 'Contrato'] },
+                { key: 'cliente', labels: ['Cliente'] },
+                { key: 'direccion', labels: ['Dirección de Instalación', 'Direccion de Instalacion', 'Dirección'] },
+                { key: 'referencia', labels: ['Punto de Referencia', 'Referencia'] },
+                { key: 'personaContacto', labels: ['Persona Contacto', 'Contacto'] },
+                { key: 'numeroContacto', labels: ['Número de contacto', 'Numero de contacto', 'Telefono'] },
+                { key: 'gps', labels: ['GPS'] },
+                { key: 'zona', labels: ['Zona'] },
+                { key: 'nap', labels: ['NAP'] },
+                { key: 'tecnico', labels: ['Técnico', 'Tecnico'] },
+                { key: 'cotaInicio', labels: ['Cota inicio'] },
+                { key: 'cotaFin', labels: ['Cota fin'] },
+                { key: 'metraje', labels: ['Metraje'] },
+                { key: 'onuMac', labels: ['Onu mac', 'MAC'] },
+                { key: 'fibraDrop', labels: ['Fibra drop'] },
+                { key: 'fastcAzul', labels: ['Fastc Azul'] },
+                { key: 'fastcVerde', labels: ['Fastc verde'] },
+                { key: 'adaptVerde', labels: ['Adapt verde'] },
+                { key: 'adaptAzul', labels: ['Adapt azul'] },
+                { key: 'patchc', labels: ['Patchc'] },
+                { key: 'roceta', labels: ['Roceta'] },
+                { key: 'potenciaNAP', labels: ['Potencia NAP'] },
+                { key: 'potenciaROS', labels: ['Potencia ROS'] },
+                { key: 'precinto', labels: ['Precinto', 'Presinto'] },
+                { key: 'puertoNap', labels: ['Puerto nap'] },
+                { key: 'puertosDisponibles', labels: ['Puertos disponibles'] },
+                { key: 'router', labels: ['Router'] },
+                { key: 'observacion', labels: ['Observación', 'Observacion'] },
+            ];
+            
+            const ignoredTerms = ['INSTALACION FIBRA', 'INSTALACIÓN FIBRA'];
+
+            function showToast(message, type = 'success') {
+                toast.textContent = message;
+                toast.classList.remove('opacity-0', 'bg-red-500', 'bg-green-500', 'bg-blue-500');
+                if (type === 'success') {
+                    toast.classList.add('bg-green-500');
+                } else if (type === 'error') {
+                    toast.classList.add('bg-red-500');
+                } else if (type === 'info') {
+                    toast.classList.add('bg-blue-500');
+                }
+                toast.classList.add('opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                }, 3000);
+            }
+
+            function parseData(text) {
+                const data = {};
+                let cleanedText = text;
+                ignoredTerms.forEach(term => {
+                    cleanedText = cleanedText.replace(new RegExp(term, 'i'), '');
+                });
+
+                const lines = cleanedText.split('\n').map(line => line.trim());
+
+                const findValue = (label) => {
+                    let foundIndex = -1;
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        if (line.toLowerCase().includes(label.toLowerCase())) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (foundIndex === -1) return 'N/A';
+
+                    let value = lines[foundIndex].replace(new RegExp(label, 'i'), '').replace(/[:=]/, '').trim();
+
+                    if (value === '' && foundIndex + 1 < lines.length) {
+                        value = lines[foundIndex + 1].trim();
+                    }
+                    
+                    if (value === '') return 'N/A';
+
+                    return value;
+                };
+
+                // General field extraction
+                fieldMappings.forEach(mapping => {
+                    const value = findValue(mapping.labels[0]);
+                    data[mapping.key] = value;
+                });
+                
+                // Specific formatting and custom logic
+                if (data.contrato !== 'N/A' && !data.contrato.startsWith('ACA-')) {
+                    data.contrato = `ACA-${data.contrato}`;
+                }
+
+                if (data.nap !== 'N/A' && !data.nap.startsWith('ACA-CL-N')) {
+                    data.nap = `ACA-CL-N${data.nap}`;
+                }
+
+                if (data.metraje !== 'N/A' && !data.metraje.endsWith(' m')) {
+                    data.metraje = `${data.metraje} m`;
+                }
+
+                // Apply prefix to Potencia values if found
+                const potenciaNapValue = findValue('Potencia NAP');
+                data.potenciaNAP = potenciaNapValue !== 'N/A' ? `-${potenciaNapValue}` : 'N/A';
+                
+                const potenciaRosValue = findValue('Potencia ROS');
+                data.potenciaROS = potenciaRosValue !== 'N/A' ? `-${potenciaRosValue}` : 'N/A';
+                
+                // Extract contact numbers and names
+                const personaContactoValue = findValue('Persona Contacto');
+                const numeroContactoValue = findValue('Número de contacto');
+
+                const allNumbers = [];
+                if (personaContactoValue !== 'N/A') {
+                    const nameNumbers = personaContactoValue.match(/\d{4,}/g);
+                    if (nameNumbers) allNumbers.push(...nameNumbers);
+                }
+
+                if (numeroContactoValue !== 'N/A') {
+                    const lineNumbers = numeroContactoValue.match(/\d{4,}/g);
+                    if (lineNumbers) allNumbers.push(...lineNumbers);
+                }
+
+                if (allNumbers.length > 0) {
+                    data.personaContacto = allNumbers[0];
+                    if (allNumbers.length > 1) {
+                         data.numeroContacto = allNumbers[1];
+                    } else {
+                         data.numeroContacto = 'N/A';
+                    }
+                } else {
+                     data.personaContacto = 'N/A';
+                     data.numeroContacto = 'N/A';
+                }
+
+                // Get name from cliente
+                const clienteLine = lines.find(line => line.toLowerCase().startsWith('cliente'));
+                if (clienteLine) {
+                    const nextLine = lines[lines.indexOf(clienteLine) + 1];
+                    if (nextLine && nextLine.trim() !== '' && !nextLine.includes(':')) {
+                        data.cliente = nextLine.trim();
+                    }
+                }
+
+                // GPS special handling
+                const gpsLine = lines.find(line => /GPS/i.test(line));
+                if (gpsLine) {
+                    const altMatch = gpsLine.match(/Altitud:\s*([^\s]+)/i);
+                    const lonMatch = gpsLine.match(/Longitud:\s*([^\s]+)/i);
+                    const latLonMatch = gpsLine.match(/GPS\s*[:=]?\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i);
+                    if (altMatch && lonMatch) {
+                         data.gps = `Alt: ${altMatch[1]} Lon: ${lonMatch[1]}`;
+                    } else if (latLonMatch) {
+                        data.gps = `${latLonMatch[1]}, ${latLonMatch[2]}`;
+                    } else {
+                        data.gps = gpsLine.replace(/GPS\s*[:=]?/i, '').trim();
+                    }
+                }
+                
+                // Clear Referencia field as requested
+                data.referencia = '';
+
+                return data;
+            }
+
+            function renderTable(filterText = '') {
+                dataTableBody.innerHTML = '';
+                const filteredData = database.filter(record => 
+                    Object.values(record).some(value => 
+                        String(value).toLowerCase().includes(filterText.toLowerCase())
+                    )
+                );
+
+                if (filteredData.length === 0) {
+                    const noDataRow = document.createElement('tr');
+                    noDataRow.id = 'placeholderRow';
+                    noDataRow.innerHTML = `<td colspan="30" class="text-center py-10 px-4 text-slate-500">
+                        ${filterText ? 'No se encontraron resultados.' : 'No hay datos registrados. Pega un reporte y haz clic en "Extraer" para empezar.'}
+                    </td>`;
+                    dataTableBody.appendChild(noDataRow);
+                    recordCountSpan.textContent = database.length;
+                    return;
+                }
+
+                filteredData.forEach((record, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-white border-b hover:bg-slate-50 fade-in';
+                    row.style.animationDelay = `${index * 50}ms`;
+                    row.dataset.index = database.indexOf(record);
+                    
+                    const order = ['contrato', 'cliente', 'direccion', 'referencia', 'personaContacto', 'numeroContacto', 'gps', 'zona', 'nap', 'tecnico', 'cotaInicio', 'cotaFin', 'metraje', 'onuMac', 'fibraDrop', 'fastcAzul', 'fastcVerde', 'adaptVerde', 'adaptAzul', 'patchc', 'roceta', 'potenciaNAP', 'potenciaROS', 'precinto', 'puertoNap', 'puertosDisponibles', 'router', 'observacion'];
+
+                    row.innerHTML += `<td class="px-4 py-2 font-medium text-slate-900">${index + 1}</td>`;
+                    order.forEach(key => {
+                        row.innerHTML += `<td class="px-4 py-2">${record[key] || 'N/A'}</td>`;
+                    });
+
+                    row.innerHTML += `
+                        <td class="px-4 py-2 text-center whitespace-nowrap">
+                            <button class="copy-btn text-blue-600 hover:text-blue-800 transition-colors mr-2">
+                                &#x2398;
+                            </button>
+                            <button class="delete-btn text-red-600 hover:text-red-800 transition-colors">
+                                &#x1F5D1;
+                            </button>
+                        </td>
+                    `;
+
+                    dataTableBody.appendChild(row);
+                });
+                recordCountSpan.textContent = database.length;
+            }
+
+            extractButton.addEventListener('click', () => {
+                const text = inputText.value.trim();
+                if (!text) {
+                    showToast('El texto de entrada está vacío.', 'error');
+                    inputText.focus();
+                    return;
+                }
+                const parsedData = parseData(text);
+                database.push(parsedData);
+                renderTable();
+                inputText.value = '';
+                inputText.focus();
+                showToast('Datos extraídos y añadidos con éxito.', 'success');
+            });
+
+            function formatCSV(data) {
+                const headers = ["#", "Contrato", "Cliente", "Dirección", "Referencia", "Contacto", "Teléfono", "GPS", "Zona", "NAP", "Técnico", "Cota Inicio", "Cota Fin", "Metraje", "ONU MAC", "Fibra Drop", "Fastc Azul", "Fastc Verde", "Adapt Verde", "Adapt Azul", "Patchc", "Roceta", "Potencia NAP", "Potencia ROS", "Precinto", "Puerto NAP", "Puertos Disp.", "Router", "Observación"];
+                const order = ['contrato', 'cliente', 'direccion', 'referencia', 'personaContacto', 'numeroContacto', 'gps', 'zona', 'nap', 'tecnico', 'cotaInicio', 'cotaFin', 'metraje', 'onuMac', 'fibraDrop', 'fastcAzul', 'fastcVerde', 'adaptVerde', 'adaptAzul', 'patchc', 'roceta', 'potenciaNAP', 'potenciaROS', 'precinto', 'puertoNap', 'puertosDisponibles', 'router', 'observacion'];
+
+                const escapeCell = (cell) => {
+                    const strCell = String(cell || '').replace(/"/g, '""');
+                    return `"${strCell}"`;
+                };
+
+                let csvContent = headers.map(escapeCell).join(',') + '\n';
+                data.forEach((row, index) => {
+                    let rowData = [(index + 1)];
+                    order.forEach(key => rowData.push(row[key]));
+                    csvContent += rowData.map(escapeCell).join(',') + '\n';
+                });
+                return csvContent;
+            }
+
+            exportButton.addEventListener('click', () => {
+                if (database.length === 0) {
+                    showToast('No hay datos para exportar.', 'error');
+                    return;
+                }
+                const csv = formatCSV(database);
+                const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'reporte_instalaciones_ftth.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('Exportado a CSV con éxito.', 'success');
+            });
+
+            clearButton.addEventListener('click', () => {
+                 if (database.length === 0) {
+                    showToast('La tabla ya está vacía.', 'info');
+                    return;
+                }
+                confirmModal.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            
+            cancelClear.addEventListener('click', () => {
+                confirmModal.classList.add('opacity-0', 'pointer-events-none');
+            });
+
+            confirmClear.addEventListener('click', () => {
+                database = [];
+                renderTable();
+                confirmModal.classList.add('opacity-0', 'pointer-events-none');
+                 showToast('Tabla limpiada con éxito.', 'success');
+            });
+            
+            window.addEventListener('click', (event) => {
+                if (event.target === confirmModal) {
+                    confirmModal.classList.add('opacity-0', 'pointer-events-none');
+                }
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                renderTable(e.target.value);
+            });
+
+            dataTableBody.addEventListener('click', (e) => {
+                if (e.target.closest('.delete-btn')) {
+                    const row = e.target.closest('tr');
+                    const index = row.dataset.index;
+                    database.splice(index, 1);
+                    renderTable(searchInput.value);
+                    showToast('Registro eliminado con éxito.', 'success');
+                } else if (e.target.closest('.copy-btn')) {
+                    const row = e.target.closest('tr');
+                    const index = row.dataset.index;
+                    const record = database[index];
+                    const recordString = Object.entries(record).map(([key, value]) => {
+                        const label = fieldMappings.find(m => m.key === key)?.labels[0] || key;
+                        return `${label}: ${value}`;
+                    }).join('\n');
+                    
+                    if (navigator.clipboard) {
+                         navigator.clipboard.writeText(recordString).then(() => {
+                            showToast('Fila copiada al portapapeles.', 'success');
+                        }).catch(err => {
+                            showToast('Error al copiar al portapapeles.', 'error');
+                        });
+                    } else {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = recordString;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            showToast('Fila copiada al portapapeles.', 'success');
+                        } catch (err) {
+                            showToast('Error al copiar al portapapeles.', 'error');
+                        }
+                        document.body.removeChild(textarea);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
